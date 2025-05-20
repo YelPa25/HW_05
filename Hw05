@@ -94,24 +94,22 @@ int main() {
 
     std::vector<sf::Sprite> walls;
 
-    // Додаємо стіни вручну (приклад лабіринту)
     for (int i = 0; i < 10; ++i) {
         sf::Sprite wall;
         wall.setTexture(wall_tex);
-        wall.setScale(0.3f, 0.3f); // зменшуємо товщину
-        wall.setPosition(200 + i * 40, 200); // горизонтальна стіна
+        wall.setScale(0.3f, 0.3f);
+        wall.setPosition(200 + i * 40, 200);
         walls.push_back(wall);
     }
 
     for (int i = 0; i < 6; ++i) {
         sf::Sprite wall;
         wall.setTexture(wall_tex);
-        wall.setScale(0.3f, 0.3f); // вертикальна
+        wall.setScale(0.3f, 0.3f);
         wall.setPosition(400, 200 + i * 40);
         walls.push_back(wall);
     }
 
-    // Тло з тайлів
     std::vector<sf::Sprite> grass_tiles;
     for (int y = 0; y < 600; y += 64) {
         for (int x = 0; x < 800; x += 64) {
