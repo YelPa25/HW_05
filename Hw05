@@ -1,90 +1,158 @@
-#include <SFML/Graphics.hpp>
+#include <iostream>
 #include <vector>
+
+#include <SFML/Window.hpp>
+#include <SFML/Graphics.hpp>
+
+class CustomSprite : public sf::Sprite
+{
+public:
+
+    void setBounds(int left, int right, int top, int bottom)
+    {
+        bound_top = top;
+        bound_bottom = bottom;
+        bound_right = right;
+        bound_left = left;
+    }
+
+    bool Collision_T(sf::FloatRect wall_bounds, sf::FloatRect guy_bounds)
+    {
+        return (guy_bounds.top + guy_bounds.height >= wall_bounds.top - 3) &&
+               (guy_bounds.top < wall_bounds.top) &&
+               (guy_bounds.left + guy_bounds.width > wall_bounds.left + 3) &&
+               (guy_bounds.left < wall_bounds.left + wall_bounds.width - 3);
+    }
+
+    bool Collision_B(sf::FloatRect wall_bounds, sf::FloatRect guy_bounds)
+    {
+        return (guy_bounds.top <= wall_bounds.top + wall_bounds.height + 3) &&
+               (guy_bounds.top > wall_bounds.top) &&
+               (guy_bounds.left + guy_bounds.width > wall_bounds.left + 3) &&
+               (guy_bounds.left < wall_bounds.left + wall_bounds.width - 3);
+    }
+
+    bool Collision_L(sf::FloatRect wall_bounds, sf::FloatRect guy_bounds)
+    {
+        return (guy_bounds.left + guy_bounds.width >= wall_bounds.left - 3) &&
+               (guy_bounds.left < wall_bounds.left) &&
+               (guy_bounds.top + guy_bounds.height > wall_bounds.top + 3) &&
+               (guy_bounds.top < wall_bounds.top + wall_bounds.height - 3);
+    }
+
+    bool Collision_R(sf::FloatRect wall_bounds, sf::FloatRect guy_bounds)
+    {
+        return (guy_bounds.left <= wall_bounds.left + wall_bounds.width + 3) &&
+               (guy_bounds.left > wall_bounds.left) &&
+               (guy_bounds.top + guy_bounds.height > wall_bounds.top + 3) &&
+               (guy_bounds.top < wall_bounds.top + wall_bounds.height - 3);
+    }
+
+    void moveInDirection(const sf::Time &elapsed, const std::vector<sf::Sprite> &obstacles)
+    {
+        bool top = 0, left = 0, bottom = 0, right = 0;
+        for (auto &obstacle : obstacles)
+        {
+            sf::FloatRect guy_bounds = getGlobalBounds();
+            sf::FloatRect wall_bounds = obstacle.getGlobalBounds();
+
+            if (Collision_T(wall_bounds, guy_bounds)) top = 1;
+            if (Collision_B(wall_bounds, guy_bounds)) bottom = 1;
+            if (Collision_L(wall_bounds, guy_bounds)) left = 1;
+            if (Collision_R(wall_bounds, guy_bounds)) right = 1;
+        }
+
+        float speed = 100.f * elapsed.asSeconds();
+        sf::FloatRect bounds = getGlobalBounds();
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && bounds.top > bound_top && !top)
+        {
+            move(0, -speed);
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && bounds.top + bounds.height < bound_bottom && !bottom)
+        {
+            move(0, speed);
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && bounds.left > bound_left && !left)
+        {
+            move(-speed, 0);
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && bounds.left + bounds.width < bound_right && !right)
+        {
+            move(speed, 0);
+        }
+    }
+
+private:
+    int bound_top = 0;
+    int bound_bottom = 0;
+    int bound_left = 0;
+    int bound_right = 0;
+};
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(960, 768), "Labirynt");
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Labyrinth Game");
+    sf::Clock clock;
 
-    // Load background
-    sf::Texture grassTexture;
-    grassTexture.loadFromFile("grass.png");
+    sf::Texture guy_tex, grass_tex, wall_tex;
 
-    sf::Sprite background(grassTexture);
-    background.setScale(
-        (float)window.getSize().x / grassTexture.getSize().x,
-        (float)window.getSize().y / grassTexture.getSize().y
+    // Load textures
+    guy_tex.loadFromFile("guy.png");
+    grass_tex.loadFromFile("grass.png");
+    wall_tex.loadFromFile("wall.png");
+
+    // Set up the background
+    sf::Sprite grass;
+    grass.setTexture(grass_tex);
+    grass.setScale(
+        (float)window.getSize().x / grass_tex.getSize().x,
+        (float)window.getSize().y / grass_tex.getSize().y
     );
 
-    // Load wall texture
-    sf::Texture wallTexture;
-    wallTexture.loadFromFile("wall.png");
+    // Create guy
+    CustomSprite guy;
+    guy.setTexture(guy_tex);
+    guy.setPosition(100, 100);
 
+    // Create walls
     std::vector<sf::Sprite> walls;
-    std::vector<sf::Vector2f> wallPositions = {
-        // Left column
-        {64, 64}, {64, 128}, {64, 192},
-        // Middle vertical
-        {192, 128}, {192, 192}, {192, 256},
-        // Top middle horizontal
-        {256, 64}, {320, 64}, {384, 64},
-        // Right vertical
-        {512, 128}, {512, 192}, {512, 256},
-        // Right horizontal (connected to vertical)
-        {448, 256}
-    };
 
-    for (auto pos : wallPositions) {
-        sf::Sprite wall(wallTexture);
-        wall.setPosition(pos);
+    for (int i = 0; i < 6; i++)
+    {
+        sf::Sprite wall;
+        wall.setTexture(wall_tex);
         walls.push_back(wall);
     }
 
-    // Load player
-    sf::Texture playerTexture;
-    playerTexture.loadFromFile("guy.png");
-
-    sf::Sprite player(playerTexture);
-    player.setPosition(128, 640);  // Start from bottom left
-    player.setScale(0.7f, 0.7f);
-
-    sf::Clock clock;
-    float speed = 100.0f;
+    walls[0].setPosition(200, 100);
+    walls[1].setPosition(200, 200);
+    walls[2].setPosition(300, 200);
+    walls[3].setPosition(400, 200);
+    walls[4].setPosition(400, 100);
+    walls[5].setPosition(500, 100);
 
     while (window.isOpen())
     {
+        sf::Time elapsed = clock.restart();
+
         sf::Event event;
-        while (window.pollEvent(event)) {
+        while (window.pollEvent(event))
+        {
             if (event.type == sf::Event::Closed)
                 window.close();
         }
 
-        float dt = clock.restart().asSeconds();
-        sf::Vector2f movement(0.f, 0.f);
+        guy.setBounds(0, window.getSize().x, 0, window.getSize().y);
+        guy.moveInDirection(elapsed, walls);
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-            movement.x -= speed * dt;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-            movement.x += speed * dt;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-            movement.y -= speed * dt;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-            movement.y += speed * dt;
-
-        sf::Vector2f oldPos = player.getPosition();
-        player.move(movement);
-
-        for (auto& wall : walls) {
-            if (player.getGlobalBounds().intersects(wall.getGlobalBounds())) {
-                player.setPosition(oldPos); // revert move
-                break;
-            }
-        }
-
-        window.clear();
-        window.draw(background);
-        for (auto& wall : walls)
+        window.clear(sf::Color::Black);
+        window.draw(grass);
+        for (auto &wall : walls)
+        {
             window.draw(wall);
-        window.draw(player);
+        }
+        window.draw(guy);
         window.display();
     }
 
