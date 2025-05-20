@@ -3,8 +3,9 @@
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Labirynt");
+    sf::RenderWindow window(sf::VideoMode(960, 768), "Labirynt");
 
+    // Load background
     sf::Texture grassTexture;
     grassTexture.loadFromFile("grass.png");
 
@@ -14,15 +15,22 @@ int main()
         (float)window.getSize().y / grassTexture.getSize().y
     );
 
+    // Load wall texture
     sf::Texture wallTexture;
     wallTexture.loadFromFile("wall.png");
 
     std::vector<sf::Sprite> walls;
     std::vector<sf::Vector2f> wallPositions = {
+        // Left column
         {64, 64}, {64, 128}, {64, 192},
-        {192, 64}, {256, 64},
-        {384, 128}, {384, 192}, {384, 256},
-        {320, 256}
+        // Middle vertical
+        {192, 128}, {192, 192}, {192, 256},
+        // Top middle horizontal
+        {256, 64}, {320, 64}, {384, 64},
+        // Right vertical
+        {512, 128}, {512, 192}, {512, 256},
+        // Right horizontal (connected to vertical)
+        {448, 256}
     };
 
     for (auto pos : wallPositions) {
@@ -31,11 +39,12 @@ int main()
         walls.push_back(wall);
     }
 
+    // Load player
     sf::Texture playerTexture;
     playerTexture.loadFromFile("guy.png");
 
     sf::Sprite player(playerTexture);
-    player.setPosition(128, 320);
+    player.setPosition(128, 640);  // Start from bottom left
     player.setScale(0.7f, 0.7f);
 
     sf::Clock clock;
@@ -44,42 +53,37 @@ int main()
     while (window.isOpen())
     {
         sf::Event event;
-        while (window.pollEvent(event))
-        {
+        while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
         }
 
-        float deltaTime = clock.restart().asSeconds();
+        float dt = clock.restart().asSeconds();
         sf::Vector2f movement(0.f, 0.f);
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-            movement.x -= speed * deltaTime;
+            movement.x -= speed * dt;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-            movement.x += speed * deltaTime;
+            movement.x += speed * dt;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-            movement.y -= speed * deltaTime;
+            movement.y -= speed * dt;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-            movement.y += speed * deltaTime;
+            movement.y += speed * dt;
 
-        // Save current position before moving
         sf::Vector2f oldPos = player.getPosition();
         player.move(movement);
 
-        // Collision detection with all walls
         for (auto& wall : walls) {
             if (player.getGlobalBounds().intersects(wall.getGlobalBounds())) {
-                player.setPosition(oldPos); // undo move
+                player.setPosition(oldPos); // revert move
                 break;
             }
         }
 
         window.clear();
         window.draw(background);
-
         for (auto& wall : walls)
             window.draw(wall);
-
         window.draw(player);
         window.display();
     }
